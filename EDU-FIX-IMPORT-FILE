@@ -1,0 +1,71 @@
+# Mickael Lundgren
+# Script: EDU-FIX-RESTMETHOD.ps1
+# Beskrivning: Retrieves access token and assigns EDU apps permission to SharePoint sites from CSV
+
+# Appregistrering
+$ClientId = "xxxxxx-xxxx-xxxx-xxx-xxxxxxxx"
+$TenantId = "xxxxxxx-xxxx-xxxx-xxx-xxxxxxx"
+$ClientSecret = "xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# CSV och logg
+$CsvPath = "C:\A\csv\teams.csv"
+$LogPath = "C:\A\csv\logg.txt"
+if (Test-Path $LogPath) { Remove-Item $LogPath }
+
+# Hämta access token
+$TokenResponse = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" -Body @{ 
+    client_id     = $ClientId
+    scope         = "https://graph.microsoft.com/.default"
+    client_secret = $ClientSecret
+    grant_type    = "client_credentials"
+}
+$AccessToken = $TokenResponse.access_token
+
+# EDU AppIds
+$AppIds = @{
+    "8f348934-64be-4bb2-bc16-c54c96789f43" = "EDU Assignments";
+    "22d27567-b3f0-4dc2-9ec2-46ed368ba538" = "Reading Assignments";
+    "2d4d3d8e-2be3-4bef-9f87-7875a61c29de" = "OneNote";
+    "c9a559d2-7aab-4f13-a6ed-e7e9c52aec87" = "Microsoft Forms";
+    "13291f5a-59ac-4c59-b0fa-d1632e8f3292" = "EDU OneNote";
+}
+
+# Läs CSV
+$Groups = Import-Csv $CsvPath
+$Step = 0
+foreach ($group in $Groups) {
+    $Step++
+    $GroupId = $group.GroupID
+    $SiteId = $group.SiteID
+    Add-Content -Path $LogPath -Value "[$Step] Bearbetar GroupId $GroupId (SiteId: $SiteId)"
+
+    foreach ($AppId in $AppIds.Keys) {
+        $Name = $AppIds[$AppId]
+        $Body = @{
+            roles = @("fullcontrol")
+            grantedToIdentities = @(@{
+                application = @{
+                    id = $AppId
+                    displayName = $Name
+                }
+            })
+        } | ConvertTo-Json -Depth 10
+
+        try {
+            Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/sites/$SiteId/permissions" `
+                -Headers @{ Authorization = "Bearer $AccessToken" } `
+                -Body $Body -ContentType "application/json"
+
+            Write-Host "   ✅ Tilldelade behörigheter för $Name ($AppId)" -ForegroundColor Green
+            Add-Content -Path $LogPath -Value "   ✅ Tilldelade behörigheter för $Name ($AppId)"
+        }
+        catch {
+            $ErrorMessage = $_.Exception.Message
+            Write-Warning ($Name + " misslyckades: " + $ErrorMessage)
+            Add-Content -Path $LogPath -Value ("   ❌ Fel för " + $Name + ": " + $ErrorMessage)
+        }
+    }
+}
+
+Write-Host "`n🚀 Färdig! Alla grupper har bearbetats." -ForegroundColor Yellow
+Add-Content -Path $LogPath -Value "Done! Alla grupper har bearbetats."
