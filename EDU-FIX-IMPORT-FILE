@@ -1,4 +1,5 @@
 # Mickael Lundgren
+# Create app registration graph api "Sites.FullControl.All"
 # Script: EDU-FIX-RESTMETHOD.ps1
 # Beskrivning: Retrieves access token and assigns EDU apps permission to SharePoint sites from CSV
 
