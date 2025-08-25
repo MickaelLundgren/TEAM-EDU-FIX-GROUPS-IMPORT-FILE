@@ -1,7 +1,10 @@
 # Mickael Lundgren
 # Create app registration graph api "Sites.FullControl.All"
 # Script: EDU-FIX-RESTMETHOD.ps1
-# Beskrivning: Retrieves access token and assigns EDU apps permission to SharePoint sites from CSV
+# Beskrivning: Retrieves access token and assigns EDU apps permission to SharePoint sites from CSV Example under
+#SiteID,GroupID
+#0xxxxx-67xx-4xxx-xxxx-xxxxxxxx1,xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxda
+
 
 # Appregistrering
 $ClientId = "xxxxxx-xxxx-xxxx-xxx-xxxxxxxx"
